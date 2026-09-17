@@ -22,4 +22,22 @@ Inspect README.md and REASONING.md to ensure all REST API tables, database schem
 
 Test the production build using Vite to ensure there are no bundling or asset compilation errors.
 
-Start both the Express backend server and the Vite frontend dev server, and confirm that the clinic appointment scheduling dashboard is running and accessible.
+Start both the Express backend server and the Vite frontend dev server, and confirm that the clinic appointment scheduling dashboard is running and acces
+
+THESE ARE THE NEW COMMANDS WHICH I GAVE TO MY AI TO ADD THE NEW FEATURES WHICH YOU GAME IN THE TWISTS
+
+can we add a feature to let users reschedule an appointment to a new date and time? We need to make sure it keeps the same patient and doctor, and runs our overlap conflict check so it doesn't double-book the doctor.
+
+Now let's add POST /api/appointments/:id/reschedule in server/index.js. Make sure the conflict check excludes the appointment being rescheduled so it doesn't trigger a conflict with itself
+
+Next, we need a notification service for patient reminders. Can we create a POST /clock endpoint that advances the clinic time, finds today's appointments, and pushes reminder messages into an /outbox queue?
+
+Let's add a GET /outbox endpoint so we can fetch all dispatched patient reminders, and make sure we don't send duplicate reminders for the same appointment.
+
+Now let's automate no-show tracking. Inside POST /clock, check if any confirmed appointment is more than 30 minutes past its start time, and auto-update its status to no-show.
+
+In BookingModal.jsx, let's lock the patient and doctor dropdowns when rescheduling an appointment so the user can only adjust the date and time slot.
+
+Let's test these new features on our Express backend. Can we verify that POST /clock, GET /outbox, and POST /api/appointments/:id/reschedule respond with clean JSON without any errors?
+
+Now let's test npm run build and start both the Express backend and Vite dev server to make sure everything builds and runs live
