@@ -304,6 +304,72 @@ app.patch('/api/appointments/:id/status', (req, res) => {
   res.json(apt);
 });
 
+// POST & PATCH /api/appointments/:id/reschedule (Level 1 — T6: Reschedule appointment conflict-free)
+const handleReschedule = (req, res) => {
+  const { id } = req.params;
+  const { date, startTime, durationMinutes, notes } = req.body;
+
+  const data = db.read();
+  const aptIndex = data.appointments.findIndex(a => a.id === id);
+  if (aptIndex === -1) return res.status(404).json({ error: 'Appointment not found.' });
+
+  const apt = data.appointments[aptIndex];
+  const targetDate = date || apt.date;
+  const targetStartTime = startTime || apt.startTime;
+  const targetDuration = Number(durationMinutes || apt.durationMinutes || 30);
+
+  const timeToMin = (t) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const minToTime = (m) => {
+    const hh = Math.floor(m / 60);
+    const mm = m % 60;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  };
+
+  const newStartMin = timeToMin(targetStartTime);
+  const newEndMin = newStartMin + targetDuration;
+  const targetEndTime = minToTime(newEndMin);
+
+  // Overlap Detection for same doctor on targetDate, excluding self (a.id !== id)
+  const conflict = data.appointments.find(a => {
+    if (a.id === id) return false;
+    if (a.doctorId !== apt.doctorId || a.date !== targetDate) return false;
+    if (a.status === 'canceled-free' || a.status === 'canceled-late') return false;
+
+    const existStart = timeToMin(a.startTime);
+    const existEnd = timeToMin(a.endTime);
+
+    return newStartMin < existEnd && newEndMin > existStart;
+  });
+
+  if (conflict) {
+    return res.status(409).json({
+      error: 'Doctor Double-Booking Conflict on Reschedule!',
+      message: `Doctor ${apt.doctorName} is already booked with ${conflict.patientName} from ${conflict.startTime} to ${conflict.endTime}.`,
+      conflictingAppointment: conflict
+    });
+  }
+
+  const updatedApt = {
+    ...apt,
+    date: targetDate,
+    startTime: targetStartTime,
+    endTime: targetEndTime,
+    durationMinutes: targetDuration,
+    status: 'confirmed',
+    notes: notes !== undefined ? notes : apt.notes
+  };
+
+  data.appointments[aptIndex] = updatedApt;
+  db.write(data);
+  return res.json(updatedApt);
+};
+
+app.post('/api/appointments/:id/reschedule', handleReschedule);
+app.patch('/api/appointments/:id/reschedule', handleReschedule);
+
 // PATCH /api/appointments/:id/fee
 app.patch('/api/appointments/:id/fee', (req, res) => {
   const { id } = req.params;
@@ -328,6 +394,103 @@ app.patch('/api/appointments/:id/fee', (req, res) => {
   db.write(data);
   res.json(apt);
 });
+
+// ----------------------------------------------------
+// CLOCK ENGINE & OUTBOX NOTIFICATION SERVICE (Level 2 — T1 & Level 3 — T2)
+// ----------------------------------------------------
+const handleClockTick = (req, res) => {
+  const { datetime, date, time } = req.body || {};
+  const data = db.read();
+  if (!data.outbox) data.outbox = [];
+
+  let simTimeStr = datetime || (date && time ? `${date}T${time}` : null) || data.settings?.simulatedTime || new Date().toISOString();
+  data.settings.simulatedTime = simTimeStr;
+
+  let currentDate = simTimeStr.split('T')[0];
+  let currentTime = (simTimeStr.split('T')[1] || '08:00').substring(0, 5);
+
+  const timeToMin = (t) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const clockMin = timeToMin(currentTime);
+
+  let remindersSent = 0;
+  let noShowsMarked = 0;
+
+  // Level 2 — T1: Send morning reminders to /outbox
+  const todayAppointments = data.appointments.filter(a => 
+    a.date === currentDate && 
+    a.status !== 'canceled-free' && 
+    a.status !== 'canceled-late'
+  );
+
+  for (const apt of todayAppointments) {
+    const alreadySent = data.outbox.some(n => n.appointmentId === apt.id && n.date === currentDate);
+    if (!alreadySent) {
+      const notif = {
+        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        appointmentId: apt.id,
+        patientId: apt.patientId,
+        patientName: apt.patientName,
+        patientPhone: apt.patientPhone,
+        doctorId: apt.doctorId,
+        doctorName: apt.doctorName,
+        date: apt.date,
+        startTime: apt.startTime,
+        type: 'REMINDER',
+        message: `Reminder: Patient ${apt.patientName} has an appointment today (${apt.date}) at ${apt.startTime} with ${apt.doctorName}.`,
+        sentAt: simTimeStr
+      };
+      data.outbox.unshift(notif);
+      remindersSent++;
+    }
+  }
+
+  // Level 3 — T2: Auto-mark appointments as no-show 30 min after start if not completed/checked-in
+  for (const apt of data.appointments) {
+    if (apt.status === 'confirmed') {
+      const aptStartMin = timeToMin(apt.startTime);
+      const isPastCutoff = (apt.date < currentDate) || (apt.date === currentDate && clockMin >= aptStartMin + 30);
+      if (isPastCutoff) {
+        apt.status = 'no-show';
+        noShowsMarked++;
+      }
+    }
+  }
+
+  db.write(data);
+
+  return res.json({
+    message: 'Clock processed successfully.',
+    simulatedTime: simTimeStr,
+    remindersSent,
+    noShowsMarked,
+    outbox: data.outbox
+  });
+};
+
+const handleGetOutbox = (req, res) => {
+  const data = db.read();
+  return res.json(data.outbox || []);
+};
+
+const handleClearOutbox = (req, res) => {
+  const data = db.read();
+  data.outbox = [];
+  db.write(data);
+  return res.json({ message: 'Outbox cleared', count: 0 });
+};
+
+// Registered Clock and Outbox endpoints
+app.post('/clock', handleClockTick);
+app.post('/api/clock', handleClockTick);
+
+app.get('/outbox', handleGetOutbox);
+app.get('/api/outbox', handleGetOutbox);
+
+app.delete('/outbox', handleClearOutbox);
+app.delete('/api/outbox', handleClearOutbox);
 
 // ----------------------------------------------------
 // FINANCIAL LEDGER & SETTINGS ENDPOINTS

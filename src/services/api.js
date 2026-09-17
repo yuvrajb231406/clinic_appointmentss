@@ -45,8 +45,13 @@ export const api = {
   },
   createAppointment: (aptData) => fetchApi('/appointments', { method: 'POST', body: JSON.stringify(aptData) }),
   cancelAppointment: (id, cancelDetails) => fetchApi(`/appointments/${id}/cancel`, { method: 'POST', body: JSON.stringify(cancelDetails) }),
+  rescheduleAppointment: (id, rescheduleData) => fetchApi(`/appointments/${id}/reschedule`, { method: 'POST', body: JSON.stringify(rescheduleData) }),
   updateStatus: (id, status) => fetchApi(`/appointments/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   updateFeeStatus: (id, feeStatus, waiveReason) => fetchApi(`/appointments/${id}/fee`, { method: 'PATCH', body: JSON.stringify({ feeStatus, waiveReason }) }),
+
+  // Clock & Outbox Notification REST APIs
+  triggerClock: (clockData = {}) => fetchApi('/clock', { method: 'POST', body: JSON.stringify(clockData) }),
+  getOutbox: () => fetchApi('/outbox'),
 
   // Financial Ledger & Settings REST APIs
   getLedger: () => fetchApi('/ledger'),

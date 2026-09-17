@@ -253,7 +253,8 @@ const INITIAL_DB = {
     workingEnd: '18:00',
     slotInterval: 15,
     simulatedTime: '2026-09-17T08:30'
-  }
+  },
+  outbox: []
 };
 
 class Database {

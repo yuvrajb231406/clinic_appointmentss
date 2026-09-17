@@ -13,6 +13,9 @@
 5. **Pagination & Sorting**: Server/client pagination controls (`Page X of Y`, limit per page) and clickable column headers (Date, Patient, Doctor, Status) on all major table views.
 6. **1-Page Product Landing Page**: High-converting marketing landing page featuring product specifications, target audience, business value, and the top 3 features to build next.
 7. **User Registration & Login**: Staff authentication with role-based access badges (`Front Desk Lead`, `Clinic Manager`, `Doctor`).
+8. **Level 1 — T6 (Reschedule Lifecycle)**: Reschedule existing appointments to a new date/time slot while re-evaluating conflict-free interval overlap, maintaining patient & doctor assignment.
+9. **Level 2 — T1 (Morning Notification Service & /outbox)**: Automated morning notification dispatcher sending appointment reminders to `/outbox` upon `POST /clock` progression.
+10. **Level 3 — T2 (Automated 30-Min No-Show Job)**: Automated background job triggered via `POST /clock` that auto-marks appointments as `no-show` if not completed/checked-in 30 minutes after scheduled start time.
 
 ---
 
@@ -30,9 +33,12 @@ The Node/Express REST API server runs on port `3001` (`http://localhost:3001/api
 | `POST` | `/api/patients` | `{ name, phone, email, dob, gender, bloodType }` | Registers a new patient record with generated MRN. |
 | `GET` | `/api/appointments` | `date`, `doctorId`, `status`, `search`, `page`, `limit`, `sortBy`, `order` | Returns paginated & sorted appointments filtered by date or doctor. |
 | `POST` | `/api/appointments` | `{ patientId, doctorId, date, startTime, durationMinutes, serviceType }` | Creates appointment after running backend double-booking conflict check. |
+| `POST` | `/api/appointments/:id/reschedule` | `{ date, startTime, durationMinutes }` | **Level 1 (T6)**: Reschedules appointment keeping same patient/doctor, ensuring conflict-free slot. |
 | `POST` | `/api/appointments/:id/cancel` | `{ isWaived, waiveReason, notes }` | Processes cancellation, evaluates 24h window, and applies $35 fee or waiver. |
-| `PATCH` | `/api/appointments/:id/status` | `{ status }` | Updates appointment status (`checked-in`, `completed`). |
+| `PATCH` | `/api/appointments/:id/status` | `{ status }` | Updates appointment status (`checked-in`, `completed`, `no-show`). |
 | `PATCH` | `/api/appointments/:id/fee` | `{ feeStatus, waiveReason }` | Updates cancellation fee status (`paid`, `waived`). |
+| `POST` | `/clock` (or `/api/clock`) | `{ datetime }` | **Level 2 (T1) & Level 3 (T2)**: Advances clock, dispatches morning reminders to `/outbox`, & auto-marks >30m no-shows. |
+| `GET` | `/outbox` (or `/api/outbox`) | — | **Level 2 (T1)**: Returns dispatched patient notification outbox array. |
 | `GET` | `/api/ledger` | — | Returns financial summary of cancellation fees assessed, paid, and pending. |
 | `GET` | `/api/settings` | — | Fetches clinic settings (notice cutoff hours, default fee amount). |
 | `PUT` | `/api/settings` | `{ cancellationWindowHours, standardLateFee, workingStart, workingEnd }` | Updates clinic policy settings. |

@@ -122,10 +122,10 @@ export default function BookingModal({
             </div>
             <div>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff' }}>
-                {initialData.id ? 'Edit Appointment' : 'Book New Appointment'}
+                {initialData.id ? 'Reschedule Appointment' : 'Book New Appointment'}
               </h3>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Guaranteed Conflict-Free Front Desk Scheduling
+                {initialData.id ? 'Reschedule to a new time window (Keeps same patient & doctor conflict-free)' : 'Guaranteed Conflict-Free Front Desk Scheduling'}
               </p>
             </div>
           </div>
@@ -141,20 +141,23 @@ export default function BookingModal({
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
               <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <User size={14} /> PATIENT
+                <User size={14} /> PATIENT {initialData.id ? '(Locked on Reschedule)' : ''}
               </label>
-              <button 
-                type="button"
-                onClick={() => setIsAddingNewPatient(!isAddingNewPatient)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
-              >
-                <Plus size={12} /> {isAddingNewPatient ? 'Select Existing Patient' : 'Register New Patient'}
-              </button>
+              {!initialData.id && (
+                <button 
+                  type="button"
+                  onClick={() => setIsAddingNewPatient(!isAddingNewPatient)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                >
+                  <Plus size={12} /> {isAddingNewPatient ? 'Select Existing Patient' : 'Register New Patient'}
+                </button>
+              )}
             </div>
 
             {!isAddingNewPatient ? (
               <select
                 value={patientId}
+                disabled={Boolean(initialData.id)}
                 onChange={(e) => setPatientId(e.target.value)}
                 style={{
                   width: '100%',
@@ -164,7 +167,8 @@ export default function BookingModal({
                   borderRadius: 'var(--radius-md)',
                   color: '#fff',
                   fontSize: '0.9rem',
-                  fontWeight: 600
+                  fontWeight: 600,
+                  opacity: initialData.id ? 0.7 : 1
                 }}
               >
                 {patients.map(p => (
@@ -209,10 +213,11 @@ export default function BookingModal({
           {/* Doctor Selection */}
           <div>
             <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
-              <Stethoscope size={14} /> ASSIGNED DOCTOR
+              <Stethoscope size={14} /> ASSIGNED DOCTOR {initialData.id ? '(Locked on Reschedule)' : ''}
             </label>
             <select
               value={doctorId}
+              disabled={Boolean(initialData.id)}
               onChange={(e) => setDoctorId(e.target.value)}
               style={{
                 width: '100%',
@@ -222,7 +227,8 @@ export default function BookingModal({
                 borderRadius: 'var(--radius-md)',
                 color: '#fff',
                 fontSize: '0.9rem',
-                fontWeight: 600
+                fontWeight: 600,
+                opacity: initialData.id ? 0.7 : 1
               }}
             >
               {doctors.map(d => (

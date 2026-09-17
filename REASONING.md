@@ -60,6 +60,26 @@ function checkConflict(newAppt, existingAppts) {
 
 ---
 
+### 🔄 2. Level 1 — T6: Reschedule Lifecycle Algorithm
+- **Constraint Enforcement**: Rescheduling preserves patient identity (`patientId`) and doctor assignment (`doctorId`).
+- **Conflict Exclusion**: The interval intersection re-evaluator excludes the target appointment ID (`a.id !== currentId`) during verification to prevent self-conflict while blocking overlap with other appointments.
+- **REST Endpoints**: `POST /api/appointments/:id/reschedule` and `PATCH /api/appointments/:id/reschedule`.
+
+---
+
+### 📬 3. Level 2 — T1: Morning Notification Dispatcher & `/outbox`
+- **Automated Morning Reminders**: Upon advancing the clinic clock via `POST /clock` (or `/api/clock`), the scheduler scans today's active appointments and dispatches reminder objects to the `/outbox` queue.
+- **Idempotency Guarantee**: Notifications track `appointmentId` and `date` to prevent duplicate reminder dispatches.
+- **REST Endpoints**: `POST /clock` (triggers morning batch) and `GET /outbox` (returns JSON outbox array).
+
+---
+
+### ⏰ 4. Level 3 — T2: Automated 30-Minute No-Show Marking Job
+- **Automation Logic**: Triggered dynamically during clock evaluation (`POST /clock`). Any appointment with status `confirmed` whose scheduled start time is $\ge 30$ minutes in the past relative to current clock time is automatically updated to `status = 'no-show'`.
+- **Status Integrity**: Preserves completed, checked-in, or canceled appointments while automatically identifying absent patients.
+
+---
+
 ### ⏱️ 2. Dynamic 24-Hour Late Cancellation Fee Evaluator
 
 #### Notice Period Calculation

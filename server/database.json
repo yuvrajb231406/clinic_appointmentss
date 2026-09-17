@@ -194,7 +194,7 @@
       "endTime": "09:30",
       "durationMinutes": 30,
       "serviceType": "Cardiology Consultation",
-      "status": "confirmed",
+      "status": "no-show",
       "notes": "Patient requested ECG baseline check."
     },
     {
@@ -220,8 +220,8 @@
       "doctorId": "doc_1",
       "doctorName": "Dr. Sarah Jenkins",
       "date": "2026-09-17",
-      "startTime": "11:00",
-      "endTime": "11:30",
+      "startTime": "14:00",
+      "endTime": "14:30",
       "durationMinutes": 30,
       "serviceType": "Routine BP Check",
       "status": "confirmed",
@@ -272,6 +272,64 @@
     "workingStart": "08:00",
     "workingEnd": "18:00",
     "slotInterval": 15,
-    "simulatedTime": "2026-09-17T08:30"
-  }
+    "simulatedTime": "2026-09-17T09:35:00Z"
+  },
+  "outbox": [
+    {
+      "id": "notif_1789641261683_p4jz8",
+      "appointmentId": "apt_104",
+      "patientId": "pat_4",
+      "patientName": "Marcus Brody",
+      "patientPhone": "(555) 628-1930",
+      "doctorId": "doc_2",
+      "doctorName": "Dr. Marcus Vance",
+      "date": "2026-09-17",
+      "startTime": "09:00",
+      "type": "REMINDER",
+      "message": "Reminder: Patient Marcus Brody has an appointment today (2026-09-17) at 09:00 with Dr. Marcus Vance.",
+      "sentAt": "2026-09-17T08:00:00Z"
+    },
+    {
+      "id": "notif_1789641261683_wvtdz",
+      "appointmentId": "apt_103",
+      "patientId": "pat_3",
+      "patientName": "Sophia Martinez",
+      "patientPhone": "(555) 743-9182",
+      "doctorId": "doc_1",
+      "doctorName": "Dr. Sarah Jenkins",
+      "date": "2026-09-17",
+      "startTime": "11:00",
+      "type": "REMINDER",
+      "message": "Reminder: Patient Sophia Martinez has an appointment today (2026-09-17) at 11:00 with Dr. Sarah Jenkins.",
+      "sentAt": "2026-09-17T08:00:00Z"
+    },
+    {
+      "id": "notif_1789641261683_hwvth",
+      "appointmentId": "apt_102",
+      "patientId": "pat_2",
+      "patientName": "Liam Hemsworth",
+      "patientPhone": "(555) 819-2049",
+      "doctorId": "doc_1",
+      "doctorName": "Dr. Sarah Jenkins",
+      "date": "2026-09-17",
+      "startTime": "09:30",
+      "type": "REMINDER",
+      "message": "Reminder: Patient Liam Hemsworth has an appointment today (2026-09-17) at 09:30 with Dr. Sarah Jenkins.",
+      "sentAt": "2026-09-17T08:00:00Z"
+    },
+    {
+      "id": "notif_1789641261683_gj027",
+      "appointmentId": "apt_101",
+      "patientId": "pat_1",
+      "patientName": "Eleanor Vance",
+      "patientPhone": "(555) 912-3411",
+      "doctorId": "doc_1",
+      "doctorName": "Dr. Sarah Jenkins",
+      "date": "2026-09-17",
+      "startTime": "09:00",
+      "type": "REMINDER",
+      "message": "Reminder: Patient Eleanor Vance has an appointment today (2026-09-17) at 09:00 with Dr. Sarah Jenkins.",
+      "sentAt": "2026-09-17T08:00:00Z"
+    }
+  ]
 }
